@@ -35,8 +35,8 @@ async function registerController(req,res){
 
     res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: true, // Required for sameSite: 'none'
+        sameSite: "none", // Allows cross-site cookies
         maxAge: 24 * 60 * 60 * 1000 // 1 day
     })
 
@@ -87,8 +87,8 @@ async function loginController(req,res){
 
     res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: true, // Required for sameSite: 'none'
+        sameSite: "none", // Allows cross-site cookies
         maxAge: 24 * 60 * 60 * 1000 // 1 day
     })
 
