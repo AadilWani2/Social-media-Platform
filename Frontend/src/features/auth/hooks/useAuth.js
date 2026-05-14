@@ -12,27 +12,31 @@ export function useAuth(){
             setLoading(true)
             const data = await login(username,password)
             setUser(data.user)
+            return true
         }
         catch(err){
-            throw err
+            console.error("Login failed:", err)
+            return false
         }
         finally{
             setLoading(false)
         }
     }
-const handleRegister = async (username,email,password) => {
-    try{
-        setLoading(true)
-        const data = await register(username,email,password)
-        setUser(data.user)
+    const handleRegister = async (username,email,password) => {
+        try{
+            setLoading(true)
+            const data = await register(username,email,password)
+            setUser(data.user)
+            return true
+        }
+        catch(err){
+            console.error("Registration failed:", err)
+            return false
+        }
+        finally{
+            setLoading(false)
+        }
     }
-    catch(err){
-        throw err
-    }
-    finally{
-        setLoading(false)
-    }
-}
 
 return {
     user,

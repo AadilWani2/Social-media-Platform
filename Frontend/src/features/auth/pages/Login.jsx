@@ -14,9 +14,10 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        await handleLogin(username,password)
-        navigate("/")
-        
+        const success = await handleLogin(username, password)
+        if (success) {
+            navigate("/")
+        }
     }
 
     if(loading){
