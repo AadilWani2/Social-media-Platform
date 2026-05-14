@@ -134,16 +134,30 @@ async function addCommentController(req,res){
     try {
         const userId = req.user.id
         const postId = req.params.postId
-        const { text } = req.body
+        const { text, parentComment } = req.body
 
         if (!text) {
             return res.status(400).json({ message: "Comment text is required" })
         }
 
+        const post = await postModel.findById(postId)
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" })
+        }
+
+        // Check: User cannot comment (top-level) on their own post
+        const isPostOwner = post.user.toString() === userId
+        if (isPostOwner && !parentComment) {
+            return res.status(403).json({ 
+                message: "Aura Policy: You cannot start a new comment thread on your own post, but you can reply to others!" 
+            })
+        }
+
         const comment = await commentModel.create({
             user: userId,
             post: postId,
-            text: text
+            text: text,
+            parentComment: parentComment || null
         })
         
         await comment.populate("user")

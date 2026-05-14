@@ -1,8 +1,10 @@
-import React, {useState, useRef, useEffect} from 'react'
+import React, {useState, useRef, useEffect, useContext} from 'react'
 import {toggleLike, toggleBookmark, addComment} from '../services/post.api'
+import { AuthContext } from '../../auth/auth.context'
 
 const Post = ({user,post}) => {
 
+  const { user: currentUser } = useContext(AuthContext)
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
@@ -14,6 +16,7 @@ const Post = ({user,post}) => {
   
   const [showCommentBox, setShowCommentBox] = useState(false)
   const [commentText, setCommentText] = useState("")
+  const [replyingTo, setReplyingTo] = useState(null) // Stores the comment ID being replied to
   const [commentCount, setCommentCount] = useState(post.commentCount || 0)
   const [localComments, setLocalComments] = useState(post.comments || [])
   const [showAllComments, setShowAllComments] = useState(false)
@@ -94,27 +97,32 @@ const Post = ({user,post}) => {
     if (!commentText.trim()) return;
     
     const submittedText = commentText;
+    const parentId = replyingTo;
+    
     setCommentText("")
+    setReplyingTo(null)
     setCommentCount(prev => prev + 1)
     
     const optimisticComment = {
         _id: Date.now().toString(),
-        user: { username: "You" },
-        text: submittedText
+        user: { username: currentUser?.username || "You" },
+        text: submittedText,
+        parentComment: parentId
     };
     
     setLocalComments(prev => [...prev, optimisticComment])
-    // Only close if they haven't chosen to show all comments yet to see it
+    
     if(!showAllComments && localComments.length === 0) {
         setShowCommentBox(false)
     }
     
     try {
-        await addComment(post._id, submittedText)
+        await addComment(post._id, submittedText, parentId)
     } catch(e) {
         setCommentCount(prev => prev - 1)
         setLocalComments(prev => prev.filter(c => c._id !== optimisticComment._id))
-        alert("Failed to submit comment.")
+        const errorMsg = e.response?.data?.message || "Failed to submit comment.";
+        alert(errorMsg)
     }
   }
 
@@ -255,9 +263,20 @@ const Post = ({user,post}) => {
                         localComments.map(c => (
                             <div key={c._id} style={{display: 'flex', gap: '1rem', alignItems: 'flex-start'}}>
                                 <div style={{width: '35px', height: '35px', borderRadius: '50%', background: 'linear-gradient(135deg, #A88BEB 0%, #F8CEEC 100%)', flexShrink: 0}} />
-                                <div>
-                                    <span style={{fontWeight: 'bold', color: 'white', marginRight: '0.5rem', fontSize: '0.95rem'}}>{c.user?.username}</span>
-                                    <span style={{color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', lineHeight: '1.4'}}>{c.text}</span>
+                                <div style={{flex: 1}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                        <span style={{fontWeight: 'bold', color: 'white', fontSize: '0.95rem'}}>{c.user?.username}</span>
+                                        <button 
+                                            onClick={() => setReplyingTo(c._id)}
+                                            style={{background: 'none', border: 'none', color: '#A88BEB', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold'}}
+                                        >
+                                            Reply
+                                        </button>
+                                    </div>
+                                    <p style={{color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', lineHeight: '1.4', margin: '4px 0 0 0'}}>
+                                        {c.parentComment && <span style={{color: '#A88BEB', marginRight: '5px', fontSize: '0.85rem'}}>@reply</span>}
+                                        {c.text}
+                                    </p>
                                 </div>
                             </div>
                         ))
@@ -270,28 +289,36 @@ const Post = ({user,post}) => {
                     background: '#0A0A0F',
                     borderTop: '1px solid rgba(255,255,255,0.1)'
                 }}>
+                     {replyingTo && (
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', padding: '0.5rem 1rem', background: 'rgba(168, 139, 235, 0.1)', borderRadius: '8px'}}>
+                            <span style={{color: '#A88BEB', fontSize: '0.85rem'}}>Replying to a comment...</span>
+                            <button onClick={() => setReplyingTo(null)} style={{background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '0.8rem'}}>✕</button>
+                        </div>
+                     )}
+
                      <form onSubmit={handleCommentSubmit} style={{display: 'flex', gap: '1rem'}}>
                         <input 
                             type="text" 
-                            placeholder="Add a comment..." 
+                            placeholder={currentUser?.username === user.username && !replyingTo ? "You cannot comment on your own post..." : "Add a comment..."} 
                             value={commentText} 
                             onChange={e => setCommentText(e.target.value)} 
-                            autoFocus
+                            disabled={currentUser?.username === user.username && !replyingTo}
                             style={{
                                 flex: 1, padding: '1rem 1.2rem', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)',
-                                background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none'
+                                background: 'rgba(255,255,255,0.05)', color: 'white', outline: 'none',
+                                opacity: (currentUser?.username === user.username && !replyingTo) ? 0.5 : 1
                             }}
                         />
                         <button 
                             type="submit" 
-                            disabled={!commentText.trim()}
+                            disabled={!commentText.trim() || (currentUser?.username === user.username && !replyingTo)}
                             style={{
                                 background: commentText.trim() ? '#A88BEB' : 'rgba(255,255,255,0.1)',
                                 color: commentText.trim() ? '#0A0A0F' : 'rgba(255,255,255,0.3)',
                                 border: 'none', borderRadius: '100px', padding: '0 1.5rem', fontWeight: 'bold', cursor: commentText.trim() ? 'pointer' : 'not-allowed', transition: '0.2s'
                             }}
                         >
-                            Post
+                            {replyingTo ? 'Reply' : 'Post'}
                         </button>
                     </form>
                 </div>

@@ -29,8 +29,8 @@ export const toggleBookmark = async (postId) => {
     return response.data
 }
 
-export const addComment = async (postId, text) => {
-    const response = await api.post(`/api/post/comment/${postId}`, { text })
+export const addComment = async (postId, text, parentComment = null) => {
+    const response = await api.post(`/api/post/comment/${postId}`, { text, parentComment })
     return response.data
 }
 
