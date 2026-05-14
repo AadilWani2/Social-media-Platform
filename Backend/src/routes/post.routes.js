@@ -8,7 +8,7 @@ const likeModel = require("../models/like.model")
 const upload = multer({storage:multer.memoryStorage()})
 
 
-postRouter.post("/",identifyUser,upload.single("image"),postController.createPostController)
+postRouter.post("/",identifyUser,upload.single("media"),postController.createPostController)
 
 
 postRouter.get("/",identifyUser,postController.getPostControllers)

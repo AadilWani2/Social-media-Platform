@@ -20,8 +20,12 @@ async function createPostController(req,res){
             fileName: "Test"
         })
 
+        const isVideo = req.file.mimetype.startsWith("video")
+        const mediaType = isVideo ? "video" : "image"
+
         const post = await postModel.create({
-            imgURL : file.url,
+            mediaURL : file.url,
+            mediaType : mediaType,
             user : req.user.id,
             caption : req.body.caption
         })

@@ -10,10 +10,10 @@ export const getFeed = async () => {
     return response.data
 }
 
-export async  function createPost(imageFile,caption){
+export async function createPost(mediaFile, caption){
     const formData = new FormData()
-    formData.append("image",imageFile)
-    formData.append("caption",caption)
+    formData.append("media", mediaFile)
+    formData.append("caption", caption)
 
     const response = await api.post("/api/post/",formData)
     return response.data

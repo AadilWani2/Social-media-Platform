@@ -1,7 +1,11 @@
-import React, {useState} from 'react'
+import React, {useState, useRef, useEffect} from 'react'
 import {toggleLike, toggleBookmark, addComment} from '../services/post.api'
 
 const Post = ({user,post}) => {
+
+  const videoRef = useRef(null)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
 
   const [isLiked, setIsLiked] = useState(post.isLiked || false)
   const [likeCount, setLikeCount] = useState(post.likeCount || 0)
@@ -13,6 +17,55 @@ const Post = ({user,post}) => {
   const [commentCount, setCommentCount] = useState(post.commentCount || 0)
   const [localComments, setLocalComments] = useState(post.comments || [])
   const [showAllComments, setShowAllComments] = useState(false)
+
+  useEffect(() => {
+    if (post.mediaType !== 'video') return;
+
+    const options = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.7 // Play when 70% of video is visible
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                videoRef.current?.play().catch(() => {});
+                setIsPlaying(true)
+            } else {
+                videoRef.current?.pause();
+                setIsPlaying(false)
+            }
+        });
+    }, options);
+
+    if (videoRef.current) {
+        observer.observe(videoRef.current);
+    }
+
+    return () => {
+        if (videoRef.current) {
+            observer.unobserve(videoRef.current);
+        }
+    };
+  }, [post.mediaType]);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+        videoRef.current.pause();
+    } else {
+        videoRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = (e) => {
+    e.stopPropagation();
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  };
 
   const handleLike = async () => {
     const previousLiked = isLiked;
@@ -77,7 +130,34 @@ const Post = ({user,post}) => {
             <p>{user.username}</p>
         </div>
         
-        <img src={post.imgURL} alt="" />
+        <div className="media-container" onClick={post.mediaType === "video" ? togglePlay : undefined}>
+            {post.mediaType === "video" ? (
+                <>
+                    <video 
+                        ref={videoRef}
+                        src={post.mediaURL} 
+                        loop 
+                        muted 
+                        playsInline
+                        className="post-media" 
+                    />
+                    <button className="mute-btn" onClick={toggleMute}>
+                        {isMuted ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5.88916 16L2.69145 19.1977C2.51131 19.3778 2.51131 19.6698 2.69145 19.8499L4.15033 21.3088C4.33048 21.4889 4.62243 21.4889 4.80258 21.3088L8 18.1114L5.88916 16ZM11.3333 19V21.6667C11.3333 22.0349 11.0349 22.3333 10.6667 22.3333H8C7.63181 22.3333 7.33333 22.0349 7.33333 21.6667V17.3333L11.3333 19ZM20.6667 19.3333C21.0349 19.3333 21.3333 19.6318 21.3333 20V21.3333C21.3333 21.7015 21.0349 22 20.6667 22H13.3333C12.9651 22 12.6667 21.7015 12.6667 21.3333V17.6667L20.6667 19.3333ZM19.232 4.48511L21.5149 6.76801C21.695 6.94816 21.695 7.2401 21.5149 7.42025L7.42025 21.5149C7.2401 21.695 6.94816 21.695 6.76801 21.5149L4.48511 19.232C4.30496 19.0519 4.30496 18.7599 4.48511 18.5798L18.5798 4.48511C18.7599 4.30496 19.0519 4.30496 19.232 4.48511ZM11.3333 2L13.1667 4L11.3333 6V2ZM13.3333 2H20.6667C21.0349 2 21.3333 2.29848 21.3333 2.66667V8.66667L13.3333 10.3333V2Z" /></svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M5.88889 16H2V8H5.88889L10 4.66667V19.3333L5.88889 16ZM12 5V19C14.8284 19 17.1421 17.1716 18.421 14.5789C18.7895 13.8421 19 13.0263 19 12.1579C19 11.2895 18.7895 10.4737 18.421 9.73684C17.1421 7.14214 14.8284 5 12 5ZM12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C11.3562 22 10.726 21.9391 10.1139 21.8219L11.1139 20.8219C11.405 20.9391 11.7001 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C11.7001 3 11.405 3.06086 11.1139 3.17805L10.1139 2.17805C10.726 2.06086 11.3562 2 12 2Z" /></svg>
+                        )}
+                    </button>
+                    {!isPlaying && (
+                        <div className="play-overlay">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.376 12.4161L8.77744 18.3042C8.41513 18.5055 7.97192 18.4011 7.7345 18.0658C7.6473 17.9423 7.60114 17.7951 7.60114 17.644V5.86794C7.60114 5.45373 7.93693 5.11794 8.35114 5.11794C8.50222 5.11794 8.64938 5.16411 8.77293 5.25131L19.3715 12.7483C19.7067 12.9857 19.7828 13.4503 19.5454 13.7856C19.4999 13.8497 19.4431 13.9065 19.379 13.952L19.376 12.4161Z" /></svg>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <img src={post.mediaURL || post.imgURL} alt="" className="post-media" />
+            )}
+        </div>
         
         <div className="icons">
             <div className="left">
