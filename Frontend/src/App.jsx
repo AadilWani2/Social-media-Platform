@@ -1,8 +1,8 @@
 import { RouterProvider } from 'react-router'
-import {router} from './App.routes'
+import {router} from './app.routes.jsx'
 import "./features/shared/global.scss"
-import { AuthProvider, AuthContext } from './features/auth/auth.context'
-import { PostContextProvider } from './features/posts/post.context'
+import { AuthProvider, AuthContext } from './features/auth/auth.context.jsx'
+import { PostContextProvider } from './features/posts/post.context.jsx'
 import { useContext } from 'react'
 
 const AppContent = () => {

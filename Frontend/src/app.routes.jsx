@@ -1,11 +1,11 @@
 import {createBrowserRouter} from 'react-router'
-import Login from './features/auth/pages/Login'
-import Register from './features/auth/pages/Register'
-import Feed from './features/posts/pages/Feed'
-import CreatePost from './features/posts/pages/CreatePost'
+import Login from './features/auth/pages/Login.jsx'
+import Register from './features/auth/pages/Register.jsx'
+import Feed from './features/posts/pages/Feed.jsx'
+import CreatePost from './features/posts/pages/CreatePost.jsx'
 
-import SearchUsers from './features/users/pages/SearchUsers'
-import Profile from './features/users/pages/Profile'
+import SearchUsers from './features/users/pages/SearchUsers.jsx'
+import Profile from './features/users/pages/Profile.jsx'
 
 export const router = createBrowserRouter([
     {
